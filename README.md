@@ -29,25 +29,15 @@ Before using `solvcon-gce` scripts, you need to sign up the GCE service and crea
 
 (GCP offers a 60-day free-trial program, including $300 credits: https://cloud.google.com/free-trial/ .)
 
-## Use an Instance
-
-Run `gcloud config set project PROJECT_ID` to tell `gcloud` your project ID, which was assigned when the project was created.  Then run `gstart <instance_name>` to create a GCE VM instance.  It usually takes 2 minutes.  `gstart` also runs the provisioning scripts.
-
-After `gstart` finishes, run `gssh <instance_name>` to connect to the instance.
-
-Before conda packages are cached in the project, execution of `gstart` will show error messages, but still work.  See the next section for making the cache work.
-
-To remove the instance (and stops being charged), run `gce-delete-instance <instance_name>`.
-
 ## Cache Conda Packages
 
 To save time from downloading conda packages from the Anaconda server, `solvcon-gce` needs to cache them in a [Google Cloud Storage](https://cloud.google.com/storage) bucket.  Before the cache is in-place, Anaconda won't be available in the instance.  `gstart` would complain like:
 
 ```
 bash: /var/lib/conda/packages//Miniconda3-latest-Linux-x86_64.sh: No such file or directory
-/home/tai271828/opt/gce/bin/admin/install-conda.sh: line 12: conda: command not found
+<your-home-directory>/opt/gce/bin/admin/install-conda.sh: line 12: conda: command not found
 bash: /var/lib/conda/packages//Miniconda2-latest-Linux-x86_64.sh: No such file or directory
-/home/tai271828/opt/gce/bin/admin/install-conda.sh: line 18: conda: command not found
+<your-home-directory>/opt/gce/bin/admin/install-conda.sh: line 18: conda: command not found
 ```
 
 To populate the cache, run:
@@ -56,10 +46,28 @@ To populate the cache, run:
 $ gce-prepare-conda-packages <bucket_name>
 ```
 
-The `<bucket_name>` can only be `gs://conda-packages/` (it's hard-coded in `solvcon-gce` script).  Before executing the above command, you need to create the bucket using [Google Cloud Console](https://console.cloud.google.com).  Please note that the bucket should be created in the same zone that the `solvcon-gce` tools assume, otherwise additional charges may incur.  For now it is `asia-east1-c`.
+Before executing the above command, you need to create the bucket using [Google Cloud Console](https://console.cloud.google.com).  Please note that the bucket should be created in the same zone that the `solvcon-gce` tools assume, otherwise additional charges may incur.  For now it is `asia-east1-c`. `<bucket_name>` looks like `gs://<bucket_name_you_tell_google_cloud>/`.
+
+This step could be optional, but so far we do not implement the code which does not to use cache when creating an instance. Please make your own bucket cache for now.
+
+## Use an Instance
+
+Run `gcloud config set project PROJECT_ID` to tell `gcloud` your project ID, which was assigned when the project was created.  Then run `gstart <instance_name> <bucket_name>` to create a GCE VM instance. `<bucket_name>` looks like `gs://<bucket_name_you_tell_google_cloud>/`. It usually takes 2 minutes.  `gstart` also runs the provisioning scripts.
+
+After `gstart` finishes, run `gssh <instance_name>` to connect to the instance.
+
+Before conda packages are cached in the project, execution of `gstart` will show error messages, but still work.  See the above section for making the cache work.
+
+To remove the instance (and stops being charged), run `gce-delete-instance <instance_name>`.
 
 ## Trouble Shooting
 
 ### SSH Connection Refused
 
+#### Unlock Keyphrase
+
 If your SSH connectioned is refused after issuing `gstart`, please make sure you have unlocked your key phrase of the project-wide SSH key.
+
+#### Project SSH Key Comment
+
+The comment of your project SSH key will be parsed by Google Cloud Platform. It will use the comment to generate the username. Make sure the generated username is what you expect if you do not use a typical SSH key comment, which looks like `username@hostname`.
