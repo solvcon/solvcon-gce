@@ -52,9 +52,10 @@ gscp() {
 
 gstart() {
   instname=$1
-  noinst=$2
+  bucketname=$2
+  noinst=$3
   if [ -z "$noinst" ]; then
-    gce-create-instance $instname
+    gce-create-instance $instname $bucketname
   fi
   gce-register-instance $instname
   cmd="while [ ! -f /var/lib/bootstrap-gce.sh ] ; \
